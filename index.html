@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة الألغاز الزوجية - الإصدار الاحترافي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f0c29;
+            --card-bg: #1a1a2e;
+            --accent: #c5a059;
+            --accent-bright: #ffd700;
+            --text: #ffffff;
+            --popup-overlay: rgba(0, 0, 0, 0.85);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(to bottom, #24243e, #302b63, #0f0c29);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* شاشة البداية */
+        #setup-screen {
+            margin-top: 10vh;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--accent);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+
+        input {
+            padding: 15px;
+            margin: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--accent);
+            background: #000;
+            color: #fff;
+            width: 260px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--accent), #e6c17a);
+            color: #000;
+            border: none;
+            padding: 15px 50px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px var(--accent);
+        }
+
+        /* لوحة اللعبة */
+        #game-board {
+            display: none;
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .turn-indicator {
+            font-size: 1.8rem;
+            color: var(--accent-bright);
+            margin-bottom: 25px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+        }
+
+        .cell {
+            aspect-ratio: 1/1;
+            background: var(--card-bg);
+            border: 1px solid rgba(197, 160, 89, 0.3);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            cursor: pointer;
+            transition: 0.4s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .cell:hover {
+            border-color: var(--accent-bright);
+            background: #252545;
+            transform: translateY(-5px);
+        }
+
+        .cell.disabled {
+            opacity: 0.2;
+            cursor: default;
+            transform: none;
+        }
+
+        /* الرسالة المنبثقة (Popup) */
+        #popup-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--popup-overlay);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .popup-card {
+            background: #fff;
+            color: #000;
+            width: 85%;
+            max-width: 500px;
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            position: relative;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .popup-text {
+            font-size: 1.6rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            color: #1a1a2e;
+        }
+
+        .timer-circle {
+            width: 80px;
+            height: 80px;
+            border: 5px solid var(--accent);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #800020;
+        }
+
+        /* استجابة الموبايل */
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: repeat(4, 1fr); }
+            .popup-text { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h1>لعبة الألغاز</h1>
+        <input type="text" id="name1" placeholder="اسم الزوج">
+        <br>
+        <input type="text" id="name2" placeholder="اسم الزوجة">
+        <br>
+        <button class="btn" onclick="initGame()">ابدأ اللعبة</button>
+    </div>
+
+    <div id="game-board">
+        <div class="turn-indicator" id="turn-text"></div>
+        <div class="grid" id="main-grid"></div>
+    </div>
+
+    <div id="popup-overlay">
+        <div class="popup-card">
+            <div class="popup-text" id="challenge-text"></div>
+            <div class="timer-circle" id="timer">15</div>
+        </div>
+    </div>
+
+    <script>
+        const tasks = [
+            // 5 Freeze
+            ...Array(5).fill("تجميد لمدة 15 ثانية: ابقَ في مكانك ودع شريكك يفعل ما يحلو له بك"),
+            // 4 Buying
+            "اشترِ لي شيئاً باللون الأحمر بعد نهاية اللعبة",
+            "اشترِ لي شيئاً باللون الأزرق بعد نهاية اللعبة",
+            "اشترِ لي شيئاً باللون الأبيض بعد نهاية اللعبة",
+            "اشترِ لي شيئاً باللون الأخضر بعد نهاية اللعبة",
+            // 1 Secret
+            "أخبرني بسرك الكبير جداً",
+            // 10 Orders
+            "قبلة لمدة 5 ثوانٍ", "قبلة على الرقبة لمدة 3 ثوانٍ", "عانقني لمدة 5 ثوانٍ", 
+            "قبلة على الفخذ لمدة 3 ثوانٍ", "أخبرني نكتة مضحكة", "قبلة في الأسفل", 
+            "قبلة بين العينين", "ما هو أكثر شيء تحبه في جسدي؟", "قبلة على صدري", "قبلة رقيقة ومطولة",
+            // 10 Mixed
+            "أخبرني ماذا يجب أن أنشر في منشوري القادم؟", "لو أصبح الحلال حراماً ليوم واحد، ماذا ستفعل؟", 
+            "قبلني الآن", "عانقني بقوة", "دعني أشرب الماء من فمك", 
+            "ضع ما في فمك وسأحاول إضحاكك غصباً عنك", "قبلة من اختيارك", 
+            "عانقني من الخلف", "تدليك لي لمدة دقيقة كاملة", "دغدغني"
+        ];
+
+        let players = [];
+        let currentIdx = 0;
+        let countdown;
+
+        function initGame() {
+            const p1 = document.getElementById('name1').value;
+            const p2 = document.getElementById('name2').value;
+            if(!p1 || !p2) return alert("يرجى كتابة الأسماء");
+
+            players = [p1, p2];
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-board').style.display = 'block';
+            
+            renderGrid();
+            updateTurnText();
+        }
+
+        function updateTurnText() {
+            document.getElementById('turn-text').innerText = `دور: ${players[currentIdx]}`;
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('main-grid');
+            const shuffled = tasks.sort(() => Math.random() - 0.5);
+
+            shuffled.forEach((task, i) => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.innerText = i + 1;
+                cell.onclick = () => triggerChallenge(cell, task);
+                grid.appendChild(cell);
+            });
+        }
+
+        function triggerChallenge(element, text) {
+            if(element.classList.contains('disabled')) return;
+
+            element.classList.add('disabled');
+            const overlay = document.getElementById('popup-overlay');
+            const challengeTxt = document.getElementById('challenge-text');
+            const timerTxt = document.getElementById('timer');
+
+            challengeTxt.innerText = text;
+            overlay.style.display = 'flex';
+
+            let seconds = 15;
+            timerTxt.innerText = seconds;
+
+            clearInterval(countdown);
+            countdown = setInterval(() => {
+                seconds--;
+                timerTxt.innerText = seconds;
+                if(seconds <= 0) {
+                    clearInterval(countdown);
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        currentIdx = currentIdx === 0 ? 1 : 0;
+                        updateTurnText();
+                    }, 1000);
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
